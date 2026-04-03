@@ -30,7 +30,7 @@ export type LoginInput = z.infer<typeof loginSchema>["body"];
 
 export const refreshSchema = z.object({
   body: z.object({
-    refreshToken: z.string().min(1, "Refresh token is required"),
+    refreshToken: z.string().optional(),
   }),
 });
 

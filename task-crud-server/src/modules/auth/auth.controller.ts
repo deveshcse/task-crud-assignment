@@ -9,8 +9,19 @@ import {
   type ResetPasswordInput,
 } from "./auth.schema.js";
 
+const COOKIE_OPTIONS = {
+  httpOnly: true,
+  secure: process.env.NODE_ENV === "production",
+  sameSite: "lax" as const, // Lax is usually safer for local/mixed envs
+  maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days matching refresh expires
+  path: "/",
+};
+
+function setRefreshTokenCookie(res: Response, token: string) {
+  res.cookie("refreshToken", token, COOKIE_OPTIONS);
+}
+
 // ── register ──────────────────────────────────────────────────────────────────
-// POST /api/v1/auth/register
 
 export async function register(
   req: Request,
@@ -20,6 +31,10 @@ export async function register(
   try {
     const input = req.body as RegisterInput;
     const result = await authService.register(input);
+
+    // Set cookie
+    setRefreshTokenCookie(res, result.refreshToken);
+
     sendSuccess(res, result, 201);
   } catch (error) {
     next(error);
@@ -27,7 +42,6 @@ export async function register(
 }
 
 // ── login ─────────────────────────────────────────────────────────────────────
-// POST /api/v1/auth/login
 
 export async function login(
   req: Request,
@@ -37,6 +51,10 @@ export async function login(
   try {
     const input = req.body as LoginInput;
     const result = await authService.login(input);
+
+    // Set cookie
+    setRefreshTokenCookie(res, result.refreshToken);
+
     sendSuccess(res, result);
   } catch (error) {
     next(error);
@@ -44,7 +62,6 @@ export async function login(
 }
 
 // ── refresh ───────────────────────────────────────────────────────────────────
-// POST /api/v1/auth/refresh
 
 export async function refresh(
   req: Request,
@@ -52,8 +69,19 @@ export async function refresh(
   next: NextFunction
 ): Promise<void> {
   try {
-    const { refreshToken } = req.body as RefreshInput;
+    // Check body first, then fallback to cookie
+    const refreshToken = (req.body as RefreshInput).refreshToken || req.cookies.refreshToken;
+
+    if (!refreshToken) {
+      res.status(401).json({ success: false, message: "No refresh token provided" });
+      return;
+    }
+
     const result = await authService.refresh(refreshToken);
+
+    // Rotate: Set new refresh token cookie
+    setRefreshTokenCookie(res, result.refreshToken);
+
     sendSuccess(res, result);
   } catch (error) {
     next(error);
@@ -61,7 +89,6 @@ export async function refresh(
 }
 
 // ── logout ────────────────────────────────────────────────────────────────────
-// POST /api/v1/auth/logout  (protected)
 
 export async function logout(
   req: Request,
@@ -70,6 +97,10 @@ export async function logout(
 ): Promise<void> {
   try {
     await authService.logout(req.user.userId);
+
+    // Clear cookie
+    res.clearCookie("refreshToken", COOKIE_OPTIONS);
+
     sendSuccess(res, { message: "Logged out successfully" });
   } catch (error) {
     next(error);

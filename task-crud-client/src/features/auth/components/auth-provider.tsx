@@ -11,6 +11,7 @@ interface AuthContextType {
     isAuthenticated: boolean;
     setIsAuthenticated: (isAuthenticated: boolean) => void;
     isLoading: boolean;
+    logout: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -19,6 +20,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const [user, setUser] = useState<User | null>(null);
     const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
+
+    const logout = async () => {
+        try {
+            await apiClient.post("/auth/logout", {});
+        } catch (error) {
+            console.error("Logout failed", error);
+        } finally {
+            authStore.clearToken();
+            setUser(null);
+            setIsAuthenticated(false);
+            // Optional: redirect happens in AuthGuard or manually
+        }
+    };
 
     useEffect(() => {
         const silentRefresh = async () => {
@@ -29,7 +43,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 setUser(user);
                 setIsAuthenticated(true);
             } catch (error) {
-                console.error("Silent refresh failed", error);
                 authStore.clearToken();
                 setUser(null);
                 setIsAuthenticated(false);
@@ -42,7 +55,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }, []);
 
     return (
-        <AuthContext.Provider value={{ user, setUser, isAuthenticated, setIsAuthenticated, isLoading }}>
+        <AuthContext.Provider value={{ user, setUser, isAuthenticated, setIsAuthenticated, isLoading, logout }}>
             {children}
         </AuthContext.Provider>
     );

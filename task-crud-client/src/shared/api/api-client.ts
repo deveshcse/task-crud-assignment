@@ -49,9 +49,7 @@ apiClient.interceptors.response.use(
       } catch (refreshError) {
         // Refresh failed, logout user
         authStore.clearToken();
-        if (typeof window !== "undefined") {
-          window.location.href = "/login";
-        }
+        // We let the error bubble up so the AuthProvider/Guard can handle the redirect logic via state
         return Promise.reject(refreshError);
       }
     }
