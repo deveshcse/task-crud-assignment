@@ -28,7 +28,7 @@ export async function getTasks(userId: string, query: ListTasksQuery) {
       : {}),
   };
 
-  const [tasks, total] = await prisma.$transaction([
+  const [tasks, total] = await Promise.all([
     prisma.task.findMany({
       where,
       skip,
