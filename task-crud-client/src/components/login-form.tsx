@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/card"
 import {
   Field,
+  FieldError,
   FieldDescription,
   FieldGroup,
   FieldLabel,
@@ -64,19 +65,17 @@ export function LoginForm({
                   {...register("email")}
                   aria-invalid={!!errors.email}
                 />
-                {errors.email && (
-                  <span className="text-xs text-destructive">{errors.email.message}</span>
-                )}
+                <FieldError>{errors.email?.message}</FieldError>
               </Field>
               <Field>
                 <div className="flex items-center">
                   <FieldLabel htmlFor="password">Password</FieldLabel>
-                  <a
-                    href="#"
+                  <Link
+                    href="/forgot-password"
                     className="ml-auto inline-block text-sm underline-offset-4 hover:underline"
                   >
                     Forgot your password?
-                  </a>
+                  </Link>
                 </div>
                 <div className="relative">
                   <Input
@@ -99,9 +98,7 @@ export function LoginForm({
                     )}
                   </button>
                 </div>
-                {errors.password && (
-                  <span className="text-xs text-destructive">{errors.password.message}</span>
-                )}
+                <FieldError>{errors.password?.message}</FieldError>
               </Field>
               <Field>
                 <Button type="submit" disabled={isLoggingIn}>

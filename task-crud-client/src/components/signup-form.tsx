@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/card"
 import {
   Field,
+  FieldError,
   FieldDescription,
   FieldGroup,
   FieldLabel,
@@ -59,9 +60,7 @@ export function SignupForm({ ...props }: React.ComponentProps<typeof Card>) {
                 {...register("name")}
                 aria-invalid={!!errors.name}
               />
-              {errors.name && (
-                <span className="text-xs text-destructive">{errors.name.message}</span>
-              )}
+              <FieldError>{errors.name?.message}</FieldError>
             </Field>
             <Field>
               <FieldLabel htmlFor="email">Email</FieldLabel>
@@ -72,9 +71,7 @@ export function SignupForm({ ...props }: React.ComponentProps<typeof Card>) {
                 {...register("email")}
                 aria-invalid={!!errors.email}
               />
-              {errors.email && (
-                <span className="text-xs text-destructive">{errors.email.message}</span>
-              )}
+              <FieldError>{errors.email?.message}</FieldError>
               <FieldDescription>
                 We&apos;ll use this to contact you. We will not share your email
                 with anyone else.
@@ -103,9 +100,7 @@ export function SignupForm({ ...props }: React.ComponentProps<typeof Card>) {
                   )}
                 </button>
               </div>
-              {errors.password && (
-                <span className="text-xs text-destructive">{errors.password.message}</span>
-              )}
+              <FieldError>{errors.password?.message}</FieldError>
               <FieldDescription>
                 Must be at least 8 characters long.
               </FieldDescription>
@@ -135,9 +130,7 @@ export function SignupForm({ ...props }: React.ComponentProps<typeof Card>) {
                   )}
                 </button>
               </div>
-              {errors["confirm-password"] && (
-                <span className="text-xs text-destructive">{errors["confirm-password"].message}</span>
-              )}
+              <FieldError>{errors["confirm-password"]?.message}</FieldError>
               <FieldDescription>Please confirm your password.</FieldDescription>
             </Field>
             <FieldGroup>

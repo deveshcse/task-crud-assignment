@@ -18,3 +18,20 @@ export const registerSchema = z.object({
 });
 
 export type RegisterInput = z.infer<typeof registerSchema>;
+
+export const forgotPasswordSchema = z.object({
+  email: z.email("Invalid email address"),
+});
+
+export type ForgotPasswordInput = z.infer<typeof forgotPasswordSchema>;
+
+export const resetPasswordSchema = z.object({
+  token: z.string().min(1, "Token is required"),
+  password: z.string().min(8, "Password must be at least 8 characters"),
+  "confirm-password": z.string(),
+}).refine((data) => data.password === data["confirm-password"], {
+  message: "Passwords do not match",
+  path: ["confirm-password"],
+});
+
+export type ResetPasswordInput = z.infer<typeof resetPasswordSchema>;
