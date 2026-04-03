@@ -42,7 +42,7 @@ export function TaskDashboard() {
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   
   const [page, setPage] = useState(1);
-  const limit = 6;
+  const limit = 7;
 
   const { data, isLoading, isError } = useTasks({
     search: search || undefined,
@@ -69,12 +69,12 @@ export function TaskDashboard() {
   }, [search, status]);
 
   return (
-    <div className="flex flex-col gap-8 w-full px-8 pt-2">
+    <div className="flex flex-col gap-6 w-full px-8 pt-2">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="flex flex-col gap-1">
-          <h1 className="text-3xl font-bold tracking-tight text-foreground/90">Your Workspace</h1>
-          <p className="text-muted-foreground text-sm font-medium">
+          <h1 className="text-xl font-bold tracking-tight text-foreground/90">Your Workspace</h1>
+          <p className="text-muted-foreground text-xs font-medium">
             Stay organized and keep track of your team's progress.
           </p>
         </div>
@@ -121,21 +121,21 @@ export function TaskDashboard() {
       </div>
 
       {/* Table Container */}
-      <div className="border bg-card shadow-sm overflow-hidden min-h-110 flex flex-col justify-between">
+      <div className="border bg-card shadow-sm overflow-hidden h-full flex flex-col justify-between">
         <div>
           {isLoading ? (
-            <div className="flex flex-col items-center justify-center h-96 gap-3 text-muted-foreground">
+            <div className="flex flex-col items-center justify-center h-120 gap-3 text-muted-foreground">
               <Loader2 className="size-8 animate-spin text-primary" />
               <p className="text-sm font-semibold animate-pulse">Synchronizing tasks...</p>
             </div>
           ) : isError ? (
-            <div className="flex flex-col items-center justify-center h-96 gap-4 p-8 text-center bg-destructive/5">
+            <div className="flex flex-col items-center justify-center h-120 gap-4 p-8 text-center bg-destructive/5">
               <p className="text-destructive font-bold text-lg">System Sync Error</p>
               <p className="text-muted-foreground text-sm max-w-xs mx-auto -mt-2">We couldn't reach the database.</p>
               <Button variant="outline" size="sm" onClick={() => window.location.reload()} className="border-destructive/20 text-destructive hover:bg-destructive/10">Retry Connection</Button>
             </div>
           ) : tasks.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-96 gap-6 text-center">
+            <div className="flex flex-col items-center justify-center h-120 gap-6 text-center">
               <div className="p-6 rounded-3xl bg-muted/50 text-muted-foreground/30 ring-1 ring-border">
                 <SearchX className="size-12" />
               </div>
@@ -152,10 +152,10 @@ export function TaskDashboard() {
             <Table>
               <TableHeader className="bg-muted/30">
                 <TableRow className="hover:bg-transparent border-b">
-                  <TableHead className="w-1/2 font-bold px-6 text-foreground/70 uppercase text-xs tracking-widest">Task Details</TableHead>
+                  <TableHead className="w-1/2 font-bold px-2 text-foreground/70 uppercase text-xs tracking-widest">Task Details</TableHead>
                   <TableHead className="w-1/4 font-bold text-foreground/70 uppercase text-xs tracking-widest">Status</TableHead>
                   <TableHead className="hidden md:table-cell font-bold text-foreground/70 uppercase text-xs tracking-widest text-right px-6">Timeline</TableHead>
-                  <TableHead className="text-right font-bold px-8 text-foreground/70 uppercase text-xs tracking-widest">Actions</TableHead>
+                  <TableHead className="text-right font-bold px-2 text-foreground/70 uppercase text-xs tracking-widest">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -169,7 +169,7 @@ export function TaskDashboard() {
 
         {/* Pagination Footer */}
         {!isLoading && !isError && tasks.length > 0 && (
-          <div className="px-6 py-2 border-t bg-muted/10 flex items-center justify-between">
+          <div className="px-2 py-2 border-t bg-muted/10 flex items-center justify-between">
             <p className="text-xs text-muted-foreground font-semibold uppercase tracking-wider">
               Page {page} of {totalPages}
             </p>
@@ -215,7 +215,6 @@ export function TaskDashboard() {
           </div>
         )}
       </div>
-
       <TaskCreateUpdateForm 
         open={isSheetOpen} 
         onOpenChange={setIsSheetOpen} 

@@ -123,6 +123,9 @@
   body {
     @apply bg-background text-foreground;
     }
+  button, [role="button"] {
+    @apply cursor-pointer;
+    }
   html {
     @apply font-sans;
     }

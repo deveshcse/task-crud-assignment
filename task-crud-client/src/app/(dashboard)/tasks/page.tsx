@@ -5,8 +5,10 @@ import { Header } from "@/shared/components/header";
 export default function TasksPage() {
   return (
     <AuthGuard>
-      <Header />
-      <TaskDashboard />
+      <div className="w-screen h-screen overflow-hidden">
+        <Header />
+        <TaskDashboard />
+      </div>
     </AuthGuard>
   )
 }

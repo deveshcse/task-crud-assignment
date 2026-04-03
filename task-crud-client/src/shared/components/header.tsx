@@ -23,12 +23,13 @@ export function Header() {
                         <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted">
                             <User className="h-4 w-4 text-muted-foreground" />
                         </div>
-                        <span className="max-w-[120px] truncate">{user?.name || user?.email}</span>
+                        <span className="max-w-[120px] truncate capitalize">{user?.name}</span>
+
                     </div>
-                    
-                    <Button 
-                        variant="destructive" 
-                        size="sm" 
+
+                    <Button
+                        variant="destructive"
+                        size="sm"
                         onClick={logout}
                         className="gap-2 h-9 px-4 shadow-sm"
                     >

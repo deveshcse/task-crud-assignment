@@ -11,8 +11,20 @@ import {
   Clock,
   CheckCircle2,
   Circle,
-  MoreHorizontal
+  MoreHorizontal,
+  Loader2
 } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import {
   TableCell,
   TableRow,
@@ -66,9 +78,7 @@ export function TaskItem({ task, onEdit }: TaskItemProps) {
   };
 
   const handleDelete = () => {
-    if (confirm("Are you sure you want to delete this task?")) {
-      deleteTask.mutate(task.id);
-    }
+    deleteTask.mutate(task.id);
   };
 
   const formattedDate = new Intl.DateTimeFormat("en-US", {
@@ -80,7 +90,7 @@ export function TaskItem({ task, onEdit }: TaskItemProps) {
   return (
     <TableRow className="group transition-colors hover:bg-muted/50">
       <TableCell className="">
-        <div className="flex flex-col gap-1">
+        <div className="flex flex-col gap-1 px-.5">
           <span className="font-semibold text-sm tracking-tight capitalize">
             {task.title}
           </span>
@@ -127,15 +137,16 @@ export function TaskItem({ task, onEdit }: TaskItemProps) {
         </span>
       </TableCell>
 
-      <TableCell className="text-right px-6">
+      <TableCell className="text-right px-.5">
         <div className="flex items-center justify-end gap-1">
           <Tooltip>
             <TooltipTrigger asChild>
               <Button 
                 variant="outline" 
                 size="icon" 
-                className="size-8 text-muted-foreground hover:text-primary hover:bg-primary/5 hover:border-primary/30"
+                className="size-8 text-muted-foreground text-primary/60 hover:text-primary hover:bg-primary/5 hover:border-primary/30"
                 onClick={() => onEdit(task)}
+                disabled={deleteTask.isPending}
               >
                 <Pencil className="size-4" />
               </Button>
@@ -143,20 +154,49 @@ export function TaskItem({ task, onEdit }: TaskItemProps) {
             <TooltipContent side="top">Edit Task</TooltipContent>
           </Tooltip>
 
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button 
-                variant="outline" 
-                size="icon" 
-                className="size-8 text-muted-foreground hover:text-destructive hover:bg-destructive/5 hover:border-destructive/30"
-                onClick={handleDelete}
-                disabled={deleteTask.isPending}
-              >
-                <Trash2 className="size-4" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent side="top">Delete Task</TooltipContent>
-          </Tooltip>
+          <AlertDialog>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <AlertDialogTrigger asChild>
+                  <Button 
+                    variant="outline" 
+                    size="icon"   
+                    className="size-8 text-muted-foreground text-destructive/60 hover:text-destructive hover:bg-destructive/5 hover:border-destructive/30 "
+                    disabled={deleteTask.isPending}
+                  >
+                    <Trash2 className="size-4" />
+                  </Button>
+                </AlertDialogTrigger>
+              </TooltipTrigger>
+              <TooltipContent side="top">Delete Task</TooltipContent>
+            </Tooltip>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This action cannot be undone. This will permanently delete the task
+                  "<span className="font-medium text-foreground">{task.title}</span>" from your workspace.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction 
+                  onClick={handleDelete}
+                  className="!bg-destructive !hover:bg-destructive/90 !text-destructive-foreground min-w-[80px]"
+                  disabled={deleteTask.isPending}
+                >
+                  {deleteTask.isPending ? (
+                    <Loader2 className="size-4 animate-spin" />
+                  ) : (
+                    <>
+                    <Trash2 className="size-4" />
+                    Delete
+                    </>
+                  )}
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </div>
       </TableCell>
     </TableRow>

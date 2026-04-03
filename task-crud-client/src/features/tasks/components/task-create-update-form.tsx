@@ -29,6 +29,7 @@ import {
 import { createTaskSchema, CreateTaskInput, TaskStatus } from "@/shared/schemas/task-schema";
 import { Task } from "../types";
 import { useCreateTask, useUpdateTask } from "../hooks/use-tasks";
+import { Plus, Loader2, Save } from "lucide-react";
 
 interface TaskCreateUpdateFormProps {
   open: boolean;
@@ -75,14 +76,24 @@ export function TaskCreateUpdateForm({ open, onOpenChange, task }: TaskCreateUpd
     }
   }, [task, reset, open]);
 
-  const onSubmit = (data: CreateTaskInput) => {
+  const onSubmit = (shouldClose: boolean) => (data: CreateTaskInput) => {
     if (isEditing && task) {
       updateTask.mutate({ id: task.id, data }, {
         onSuccess: () => onOpenChange(false)
       });
     } else {
       createTask.mutate(data, {
-        onSuccess: () => onOpenChange(false)
+        onSuccess: () => {
+          if (shouldClose) {
+            onOpenChange(false);
+          } else {
+            reset({
+              title: "",
+              description: "",
+              status: "PENDING",
+            });
+          }
+        }
       });
     }
   };
@@ -97,13 +108,13 @@ export function TaskCreateUpdateForm({ open, onOpenChange, task }: TaskCreateUpd
           </SheetDescription>
         </SheetHeader>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-8 py-8">
-          <FieldGroup className="space-y-6 p-4">
+          <FieldGroup className="space-y-4 p-4">
             <Field>
               <FieldLabel htmlFor="title" className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Title</FieldLabel>
               <Input
                 id="title"
                 placeholder="What needs to be done?"
-                className="h-12 text-base focus-visible:ring-primary/20"
+                className="text-base focus-visible:ring-primary/20"
                 {...register("title")}
                 aria-invalid={!!errors.title}
               />
@@ -116,7 +127,7 @@ export function TaskCreateUpdateForm({ open, onOpenChange, task }: TaskCreateUpd
               <Input
                 id="description"
                 placeholder="Add more details (optional)..."
-                className="h-12 text-base focus-visible:ring-primary/20"
+                className="text-base focus-visible:ring-primary/20"
                 {...register("description")}
                 aria-invalid={!!errors.description}
               />
@@ -130,25 +141,64 @@ export function TaskCreateUpdateForm({ open, onOpenChange, task }: TaskCreateUpd
                 onValueChange={(val) => setValue("status", val as TaskStatus)}
                 value={status}
               >
-                <SelectTrigger id="status" className="h-12 text-base shadow-none">
+                <SelectTrigger id="status" >
                   <SelectValue placeholder="Select status" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="PENDING" className="py-3">Pending</SelectItem>
-                  <SelectItem value="IN_PROGRESS" className="py-3">In Progress</SelectItem>
-                  <SelectItem value="DONE" className="py-3">Done</SelectItem>
+                  <SelectItem value="PENDING" >Pending</SelectItem>
+                  <SelectItem value="IN_PROGRESS" >In Progress</SelectItem>
+                  <SelectItem value="DONE" >Done</SelectItem>
                 </SelectContent>
               </Select>
             </Field>
           </FieldGroup>
-          <SheetFooter className="pt-6 border-t mt-auto"> 
-            <Button 
+          <SheetFooter className="border-t flex flex-row items-center justify-between gap-3 mt-auto absolute bottom-0 left-0 right-0"> 
+            {isEditing ? (
+              <Button 
                 type="submit" 
-                disabled={createTask.isPending || updateTask.isPending} 
-                className="w-full h-12 text-base font-bold shadow-lg shadow-primary/20"
-            >
-              {isEditing ? "Save Changes" : "Create Task"}
-            </Button>
+                onClick={handleSubmit(onSubmit(true))}
+                disabled={updateTask.isPending} 
+                className="min-w-[140px]  text-sm font-bold shadow-lg shadow-primary/20"
+              >
+                {updateTask.isPending ? (
+                  <Loader2 className="mr-2 size-4 animate-spin" />
+                ) : (
+                  <Save className="mr-2 size-4" />
+                )}
+                Save Changes
+              </Button>
+            ) : (
+              <>
+                <Button 
+                  type="button" 
+                  variant="outline"
+                  onClick={handleSubmit(onSubmit(false))}
+                  disabled={createTask.isPending} 
+                  className="min-w-25 "
+                >
+                  {createTask.isPending ? (
+                    <Loader2 className="mr-2 size-4 animate-spin" />
+                  ) : (
+                    <Plus className="mr-2 size-4" />
+                  )}
+                  Create
+                </Button>
+                <Button 
+                  type="button" 
+                  variant="outline"
+                  onClick={handleSubmit(onSubmit(true))}
+                  disabled={createTask.isPending} 
+                  className="min-w-[140px] "
+                >
+                  {createTask.isPending ? (
+                    <Loader2 className="mr-2 size-4 animate-spin" />
+                  ) : (
+                    <Plus className="mr-2 size-4" />
+                  )}
+                  Create & Close
+                </Button>
+              </>
+            )}
           </SheetFooter>
         </form>
       </SheetContent>
