@@ -21,7 +21,6 @@ app.use(cors({ origin: true, credentials: true }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
-app.use(pinoHttp({ logger }));
 
 // ── Swagger Documentation ─────────────────────────────────────────────────────
 app.use("/docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));

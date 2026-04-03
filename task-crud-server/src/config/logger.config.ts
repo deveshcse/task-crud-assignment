@@ -1,5 +1,5 @@
 import pino from "pino";
-import { ENV } from "./env.config";
+import { ENV } from "./env.config.js";
 
 export const logger = pino({
   level: ENV.NODE_ENV === "production" ? "info" : "debug",
