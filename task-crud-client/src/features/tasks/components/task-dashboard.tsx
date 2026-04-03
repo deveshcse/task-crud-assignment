@@ -11,13 +11,15 @@ import {
   PaginationContent,
   PaginationItem,
 } from "@/components/ui/pagination";
-import { 
-  Plus, 
-  Search, 
-  Loader2, 
+import {
+  Plus,
+  Search,
+  Loader2,
   SearchX,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  X,
+  RefreshCw
 } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -40,12 +42,23 @@ export function TaskDashboard() {
   const [status, setStatus] = useState<TaskStatus | "all">("all");
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
-  
+
   const [page, setPage] = useState(1);
   const limit = 7;
 
-  const { data, isLoading, isError } = useTasks({
-    search: search || undefined,
+  // Implement debounced search
+  const [debouncedSearch, setDebouncedSearch] = useState(search);
+
+  React.useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(search);
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [search]);
+
+  const { data, isLoading, isError, refetch, isFetching } = useTasks({
+    search: debouncedSearch || undefined,
     status: status === "all" ? undefined : status,
     page,
     limit
@@ -66,7 +79,7 @@ export function TaskDashboard() {
 
   React.useEffect(() => {
     setPage(1);
-  }, [search, status]);
+  }, [debouncedSearch, status]);
 
   return (
     <div className="flex flex-col gap-6 w-full px-8 pt-2">
@@ -86,42 +99,93 @@ export function TaskDashboard() {
 
       {/* Controls */}
       <div className="w-full flex flex-col md:flex-row gap-4 items-center justify-between bg-card p-2 border shadow-sm">
-        <div className="relative w-full md:max-w-md">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground/60" />
-          <Input 
-            placeholder="Search tasks by title..." 
-            className="pl-9 border bg-transparent focus-visible:ring-0 shadow-none text-base" 
-            value={search}
-            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearch(e.target.value)}
-          />
+
+        <div className="w-full flex items-center justify-start gap-2">
+
+          <div className="relative w-full md:max-w-md">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground/60" />
+            <Input
+              placeholder="Search tasks by title..."
+              className="pl-9 border bg-transparent focus-visible:ring-0 shadow-none text-base"
+              value={search}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearch(e.target.value)}
+            />
+
+
+          </div>
+
+
+          {/* a reset button inside tooltip to clear input after search */}
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="outline"
+                size="icon"
+                className="size-8 text-muted-foreground text-primary/60 hover:text-primary hover:bg-primary/5 hover:border-primary/30"
+                onClick={() => {
+                  setSearch("");
+                  setDebouncedSearch("");
+                }}
+                disabled={search === ""}
+              >
+                <X className="size-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="top">Clear Search</TooltipContent>
+          </Tooltip>
+
+          {/* a refetch button inside tooltip to refetch tasks */}
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="outline"
+                size="icon"
+                className={cn(
+                  "size-8 text-muted-foreground text-primary/60 hover:text-primary hover:bg-primary/5 hover:border-primary/30",
+                 
+                )}
+                onClick={() => refetch()}
+                disabled={isLoading}
+              >
+                <RefreshCw className={cn("size-4", isFetching && "animate-spin")} />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="top">Refetch Tasks</TooltipContent>
+          </Tooltip>
+
+
+
         </div>
-        
+
+
+
+
         <div className="w-full bg-border h-px md:hidden"></div>
 
-        <Tabs 
-          value={status} 
-          onValueChange={(val) => setStatus(val as any)} 
+        <Tabs
+          value={status}
+          onValueChange={(val) => setStatus(val as any)}
           className="w-full md:w-auto items-center justify-between"
         >
           <TabsList className="w-full grid grid-cols-4 items-center justify-center bg-muted/50 border-none p-1">
             <TabsTrigger value="all" className="text-xs border font-bold data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-lg">
-               All
+              All
             </TabsTrigger>
             <TabsTrigger value="PENDING" className="text-xs font-bold data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-lg">
-               Pending
+              Pending
             </TabsTrigger>
             <TabsTrigger value="IN_PROGRESS" className="text-xs font-bold data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-lg">
-               Active
+              Active
             </TabsTrigger>
             <TabsTrigger value="DONE" className="text-xs font-bold data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-lg">
-               Done
+              Done
             </TabsTrigger>
           </TabsList>
         </Tabs>
       </div>
 
       {/* Table Container */}
-      <div className="border bg-card shadow-sm overflow-hidden h-full flex flex-col justify-between">
+      <div className="border bg-card shadow-sm overflow-hidden h-full min-h-120 flex flex-col justify-between">
         <div>
           {isLoading ? (
             <div className="flex flex-col items-center justify-center h-120 gap-3 text-muted-foreground">
@@ -142,8 +206,8 @@ export function TaskDashboard() {
               <div className="flex flex-col gap-2">
                 <p className="font-bold text-2xl tracking-tight text-foreground/80">No matches found</p>
                 <p className="text-muted-foreground font-medium text-sm max-w-xs mx-auto px-4 leading-relaxed">
-                  {search || status !== "all" 
-                    ? "We couldn't find any tasks matching your current filters." 
+                  {search || status !== "all"
+                    ? "We couldn't find any tasks matching your current filters."
                     : "Your workspace is currently empty."}
                 </p>
               </div>
@@ -174,51 +238,51 @@ export function TaskDashboard() {
               Page {page} of {totalPages}
             </p>
             <Pagination className="w-auto mx-0">
-                <PaginationContent className="gap-1">
-                    <PaginationItem>
-                        <Tooltip>
-                            <TooltipTrigger asChild>
-                                <Button 
-                                    variant="outline" 
-                                    size="icon" 
-                                    onClick={() => setPage(p => Math.max(1, p - 1))}
-                                    disabled={page === 1}
-                                    className="h-8 w-8"
-                                >
-                                    <ChevronLeft className="h-4 w-4" />
-                                </Button>
-                            </TooltipTrigger>
-                            <TooltipContent side="top">Previous Page</TooltipContent>
-                        </Tooltip>
-                    </PaginationItem>
-                    
-                    
+              <PaginationContent className="gap-1">
+                <PaginationItem>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => setPage(p => Math.max(1, p - 1))}
+                        disabled={page === 1}
+                        className="h-8 w-8"
+                      >
+                        <ChevronLeft className="h-4 w-4" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="top">Previous Page</TooltipContent>
+                  </Tooltip>
+                </PaginationItem>
 
-                    <PaginationItem>
-                        <Tooltip>
-                            <TooltipTrigger asChild>
-                                <Button 
-                                    variant="outline" 
-                                    size="icon" 
-                                    onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-                                    disabled={page === totalPages}
-                                    className="h-8 w-8"
-                                >
-                                    <ChevronRight className="h-4 w-4" />
-                                </Button>
-                            </TooltipTrigger>
-                            <TooltipContent side="top">Next Page</TooltipContent>
-                        </Tooltip>
-                    </PaginationItem>
-                </PaginationContent>
+
+
+                <PaginationItem>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                        disabled={page === totalPages}
+                        className="h-8 w-8"
+                      >
+                        <ChevronRight className="h-4 w-4" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="top">Next Page</TooltipContent>
+                  </Tooltip>
+                </PaginationItem>
+              </PaginationContent>
             </Pagination>
           </div>
         )}
       </div>
-      <TaskCreateUpdateForm 
-        open={isSheetOpen} 
-        onOpenChange={setIsSheetOpen} 
-        task={editingTask} 
+      <TaskCreateUpdateForm
+        open={isSheetOpen}
+        onOpenChange={setIsSheetOpen}
+        task={editingTask}
       />
     </div>
   );

@@ -108,19 +108,18 @@ export function TaskItem({ task, onEdit }: TaskItemProps) {
           onValueChange={(val) => handleStatusChange(val as TaskStatus)}
           disabled={updateTask.isPending}
         >
-          <SelectTrigger className="h-8 w-32 border-none bg-transparent hover:bg-muted focus:ring-0 shadow-none px-0">
-            <SelectValue>
-              <Badge 
-                variant={statusConfig[task.status].variant} 
-                className={cn("text-[0.625rem] font-bold uppercase tracking-wider", statusConfig[task.status].className)}
-              >
-                {statusConfig[task.status].label}
-              </Badge>
-            </SelectValue>
+          <SelectTrigger className={cn(
+            "w-34 border-none  px-2 transition-all text-[10px] font-bold uppercase tracking-wider shadow-none focus:ring-0",
+            statusConfig[task.status].className
+          )}>
+            <div className="flex items-center gap-1.5">
+              {/* {React.createElement(statusConfig[task.status].icon, { className: "size-3" })} */}
+              <SelectValue />
+            </div>
           </SelectTrigger>
-          <SelectContent>
+          <SelectContent >
             {Object.entries(statusConfig).map(([key, config]) => (
-              <SelectItem key={key} value={key} className="text-xs font-medium">
+              <SelectItem key={key} value={key} className="text-xs font-medium ">
                 <div className="flex items-center gap-2">
                   <config.icon className="size-3" />
                   {config.label}
