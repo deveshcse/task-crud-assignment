@@ -132,6 +132,7 @@ router.get("/:id", validate(taskIdParamSchema), taskController.getTask);
  *               status:
  *                 type: string
  *                 enum: [PENDING, IN_PROGRESS, DONE]
+ *                 description: Status updates must follow the one-way state machine (PENDING -> IN_PROGRESS -> DONE).
  *     responses:
  *       200:
  *         description: Task updated
@@ -167,7 +168,8 @@ router.delete("/:id", validate(taskIdParamSchema), taskController.deleteTask);
  * @swagger
  * /tasks/{id}/toggle:
  *   patch:
- *     summary: Toggle task status (PENDING → IN_PROGRESS → DONE → PENDING)
+ *     summary: Advance task status (PENDING → IN_PROGRESS → DONE)
+ *     description: Toggles the task to the next logical state. This is a one-way transition.
  *     tags: [Tasks]
  *     security:
  *       - bearerAuth: []

@@ -1,5 +1,9 @@
 import { prisma } from "../../config/db.config.js";
-import { NotFoundError } from "../../utils/api-error.js";
+import { BadRequestError, NotFoundError } from "../../utils/api-error.js";
+import {
+  isValidTransition,
+  getNextToggleStatus,
+} from "../../utils/task-state-machine.js";
 import {
   type CreateTaskInput,
   type UpdateTaskInput,
@@ -69,7 +73,14 @@ export async function updateTask(
   userId: string,
   input: UpdateTaskInput
 ) {
-  await getTaskById(id, userId);
+  const task = await getTaskById(id, userId);
+
+  // Validate status transition if provided
+  if (input.status && !isValidTransition(task.status as TaskStatus, input.status)) {
+    throw new BadRequestError(
+      `Cannot transition task from ${task.status} to ${input.status}`
+    );
+  }
 
   return prisma.task.update({
     where: { id },
@@ -88,18 +99,9 @@ export async function deleteTask(id: string, userId: string) {
   await prisma.task.delete({ where: { id } });
 }
 
-// ── Toggle task status ────────────────────────────────────────────────────────
-// Cycles: PENDING → IN_PROGRESS → DONE → PENDING
-
-const STATUS_CYCLE: Record<TaskStatus, TaskStatus> = {
-  PENDING: "IN_PROGRESS",
-  IN_PROGRESS: "DONE",
-  DONE: "PENDING",
-};
-
 export async function toggleTask(id: string, userId: string) {
   const task = await getTaskById(id, userId);
-  const nextStatus = STATUS_CYCLE[task.status as TaskStatus];
+  const nextStatus = getNextToggleStatus(task.status as TaskStatus);
 
   return prisma.task.update({
     where: { id },

@@ -6,6 +6,8 @@ import {
   registerSchema,
   loginSchema,
   refreshSchema,
+  forgotPasswordSchema,
+  resetPasswordSchema,
 } from "./auth.schema.js";
 
 const router = Router();
@@ -121,5 +123,62 @@ router.post("/refresh", validate(refreshSchema), authController.refresh);
  *         description: Unauthorized
  */
 router.post("/logout", authenticate, authController.logout);
+
+/**
+ * @swagger
+ * /auth/forgot-password:
+ *   post:
+ *     summary: Request a password reset email
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [email]
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *     responses:
+ *       200:
+ *         description: Neutral success message sent regardless of email existence
+ */
+router.post(
+  "/forgot-password",
+  validate(forgotPasswordSchema),
+  authController.forgotPassword
+);
+
+/**
+ * @swagger
+ * /auth/reset-password:
+ *   post:
+ *     summary: Reset password using a valid token
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [token, password]
+ *             properties:
+ *               token:
+ *                 type: string
+ *               password:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Password reset successfully
+ *       400:
+ *         description: Invalid or expired token
+ */
+router.post(
+  "/reset-password",
+  validate(resetPasswordSchema),
+  authController.resetPassword
+);
 
 export default router;

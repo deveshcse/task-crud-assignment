@@ -1,13 +1,21 @@
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
+import crypto from "node:crypto";
 import { prisma } from "../../config/db.config.js";
 import { ENV } from "../../config/env.config.js";
 import {
   BadRequestError,
   ConflictError,
   UnauthorizedError,
+  NotFoundError,
 } from "../../utils/api-error.js";
-import { type RegisterInput, type LoginInput } from "./auth.schema.js";
+import {
+  type RegisterInput,
+  type LoginInput,
+  type ForgotPasswordInput,
+  type ResetPasswordInput,
+} from "./auth.schema.js";
+import { sendResetPasswordEmail } from "../../utils/email.js";
 
 // ── Token helpers ─────────────────────────────────────────────────────────────
 
@@ -153,5 +161,63 @@ export async function logout(userId: string) {
   await prisma.user.update({
     where: { id: userId },
     data: { refreshToken: null },
+  });
+}
+
+// ── Forgot Password ───────────────────────────────────────────────────────────
+
+export async function forgotPassword(input: ForgotPasswordInput) {
+  const user = await prisma.user.findUnique({
+    where: { email: input.email },
+  });
+
+  // Security: Always return "success" even if email doesn't exist
+  if (!user) return;
+
+  const resetToken = crypto.randomBytes(32).toString("hex");
+  const hashedToken = crypto
+    .createHash("sha256")
+    .update(resetToken)
+    .digest("hex");
+
+  await prisma.user.update({
+    where: { id: user.id },
+    data: {
+      resetPasswordToken: hashedToken,
+      resetPasswordExpires: new Date(Date.now() + 60 * 60 * 1000), // 1 hour
+    },
+  });
+
+  await sendResetPasswordEmail(user.email, resetToken);
+}
+
+// ── Reset Password ────────────────────────────────────────────────────────────
+
+export async function resetPassword(input: ResetPasswordInput) {
+  const hashedToken = crypto
+    .createHash("sha256")
+    .update(input.token)
+    .digest("hex");
+
+  const user = await prisma.user.findFirst({
+    where: {
+      resetPasswordToken: hashedToken,
+      resetPasswordExpires: { gt: new Date() },
+    },
+  });
+
+  if (!user) {
+    throw new BadRequestError("Invalid or expired password reset token");
+  }
+
+  const hashedPassword = await bcrypt.hash(input.password, 12);
+
+  await prisma.user.update({
+    where: { id: user.id },
+    data: {
+      password: hashedPassword,
+      resetPasswordToken: null,
+      resetPasswordExpires: null,
+    },
   });
 }
