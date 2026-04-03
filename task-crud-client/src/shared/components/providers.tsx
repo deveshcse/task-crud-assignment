@@ -6,6 +6,8 @@ import { AuthProvider } from "@/features/auth/components/auth-provider";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
 
+import { TooltipProvider } from "@/components/ui/tooltip";
+
 export const Providers: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const [queryClient] = useState(() => new QueryClient({
         defaultOptions: {
@@ -20,8 +22,10 @@ export const Providers: React.FC<{ children: React.ReactNode }> = ({ children })
         <QueryClientProvider client={queryClient}>
             <ThemeProvider>
                 <AuthProvider>
-                    {children}
-                    <Toaster position="top-right" richColors />
+                    <TooltipProvider>
+                        {children}
+                        <Toaster position="top-right" richColors />
+                    </TooltipProvider>
                 </AuthProvider>
             </ThemeProvider>
         </QueryClientProvider>

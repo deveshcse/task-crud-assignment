@@ -1,30 +1,34 @@
+"use client"
+
 import React from "react";
-import { Task } from "../types";
-import { useDeleteTask, useToggleTask } from "../hooks/use-tasks";
+import { Task, TaskStatus } from "../types";
+import { useDeleteTask, useUpdateTask } from "../hooks/use-tasks";
 import { Button } from "@/components/ui/button";
-import {
-  Item,
-  ItemActions,
-  ItemContent,
-  ItemDescription,
-  ItemMedia,
-  ItemTitle,
-} from "@/components/ui/item";
 import { Badge } from "@/components/ui/badge";
 import { 
-  CheckCircle2, 
-  Circle, 
-  Clock, 
-  MoreVertical, 
   Pencil, 
-  Trash2 
+  Trash2,
+  Clock,
+  CheckCircle2,
+  Circle,
+  MoreHorizontal
 } from "lucide-react";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+  TableCell,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 
 interface TaskItemProps {
@@ -33,17 +37,32 @@ interface TaskItemProps {
 }
 
 const statusConfig = {
-  PENDING: { color: "bg-yellow-100 text-yellow-800 border-yellow-200", icon: Circle },
-  IN_PROGRESS: { color: "bg-blue-100 text-blue-800 border-blue-200", icon: Clock },
-  DONE: { color: "bg-green-100 text-green-800 border-green-200", icon: CheckCircle2 },
+  PENDING: { 
+    label: "Pending", 
+    variant: "outline" as const, 
+    className: "bg-yellow-50 text-yellow-700 border-yellow-200 hover:bg-yellow-50",
+    icon: Circle 
+  },
+  IN_PROGRESS: { 
+    label: "In Progress", 
+    variant: "outline" as const, 
+    className: "bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-50",
+    icon: Clock 
+  },
+  DONE: { 
+    label: "Done", 
+    variant: "outline" as const, 
+    className: "bg-green-50 text-green-700 border-green-200 hover:bg-green-50",
+    icon: CheckCircle2 
+  },
 };
 
 export function TaskItem({ task, onEdit }: TaskItemProps) {
   const deleteTask = useDeleteTask();
-  const toggleTask = useToggleTask();
+  const updateTask = useUpdateTask();
 
-  const handleToggle = () => {
-    toggleTask.mutate(task.id);
+  const handleStatusChange = (newStatus: TaskStatus) => {
+    updateTask.mutate({ id: task.id, data: { status: newStatus } });
   };
 
   const handleDelete = () => {
@@ -52,73 +71,94 @@ export function TaskItem({ task, onEdit }: TaskItemProps) {
     }
   };
 
-  const StatusIcon = statusConfig[task.status].icon;
+  const formattedDate = new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  }).format(new Date(task.createdAt));
 
   return (
-    <Item variant="outline" className="group">
-      <ItemMedia>
-        <button 
-          onClick={handleToggle}
-          disabled={toggleTask.isPending}
-          className={cn(
-            "rounded-full p-0.5 transition-colors focus:outline-none",
-            task.status === "DONE" ? "text-green-600" : "text-muted-foreground hover:text-primary"
-          )}
-        >
-          <StatusIcon className="size-5 shrink-0" />
-        </button>
-      </ItemMedia>
-      
-      <ItemContent>
-        <div className="flex items-center gap-2">
-          <ItemTitle className={cn(
-            task.status === "DONE" && "line-through text-muted-foreground"
-          )}>
+    <TableRow className="group transition-colors hover:bg-muted/50">
+      <TableCell className="">
+        <div className="flex flex-col gap-1">
+          <span className="font-semibold text-sm tracking-tight capitalize">
             {task.title}
-          </ItemTitle>
-          <Badge 
-            variant="outline" 
-            className={cn("text-[10px] py-0 px-1.5 h-4 w-fit font-semibold", statusConfig[task.status].color)}
-          >
-            {task.status.replace("_", " ")}
-          </Badge>
+          </span>
+          {task.description && (
+            <span className="text-xs text-muted-foreground line-clamp-1 max-w-xs">
+              {task.description}
+            </span>
+          )}
         </div>
-        {task.description && (
-          <ItemDescription className="line-clamp-1">
-            {task.description}
-          </ItemDescription>
-        )}
-      </ItemContent>
-
-      <ItemActions className="opacity-0 group-hover:opacity-100 transition-opacity">
-        <Button 
-          variant="ghost" 
-          size="icon" 
-          className="size-8"
-          onClick={() => onEdit(task)}
+      </TableCell>
+      
+      <TableCell>
+        <Select 
+          value={task.status} 
+          onValueChange={(val) => handleStatusChange(val as TaskStatus)}
+          disabled={updateTask.isPending}
         >
-          <Pencil className="size-4" />
-        </Button>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="size-8">
-              <MoreVertical className="size-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-32">
-            <DropdownMenuItem onClick={handleToggle}>
-              Toggle Status
-            </DropdownMenuItem>
-            <DropdownMenuItem 
-               onClick={handleDelete}
-               className="text-destructive focus:text-destructive"
-            >
-              <Trash2 className="mr-2 size-4" />
-              Delete
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </ItemActions>
-    </Item>
+          <SelectTrigger className="h-8 w-32 border-none bg-transparent hover:bg-muted focus:ring-0 shadow-none px-0">
+            <SelectValue>
+              <Badge 
+                variant={statusConfig[task.status].variant} 
+                className={cn("text-[0.625rem] font-bold uppercase tracking-wider", statusConfig[task.status].className)}
+              >
+                {statusConfig[task.status].label}
+              </Badge>
+            </SelectValue>
+          </SelectTrigger>
+          <SelectContent>
+            {Object.entries(statusConfig).map(([key, config]) => (
+              <SelectItem key={key} value={key} className="text-xs font-medium">
+                <div className="flex items-center gap-2">
+                  <config.icon className="size-3" />
+                  {config.label}
+                </div>
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </TableCell>
+
+      <TableCell className="hidden md:table-cell text-right px-6">
+        <span className="text-xs font-medium text-muted-foreground">
+          {formattedDate}
+        </span>
+      </TableCell>
+
+      <TableCell className="text-right px-6">
+        <div className="flex items-center justify-end gap-1">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button 
+                variant="outline" 
+                size="icon" 
+                className="size-8 text-muted-foreground hover:text-primary hover:bg-primary/5 hover:border-primary/30"
+                onClick={() => onEdit(task)}
+              >
+                <Pencil className="size-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="top">Edit Task</TooltipContent>
+          </Tooltip>
+
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button 
+                variant="outline" 
+                size="icon" 
+                className="size-8 text-muted-foreground hover:text-destructive hover:bg-destructive/5 hover:border-destructive/30"
+                onClick={handleDelete}
+                disabled={deleteTask.isPending}
+              >
+                <Trash2 className="size-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="top">Delete Task</TooltipContent>
+          </Tooltip>
+        </div>
+      </TableCell>
+    </TableRow>
   );
 }

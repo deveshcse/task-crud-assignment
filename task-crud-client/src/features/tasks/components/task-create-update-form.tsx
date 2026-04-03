@@ -9,7 +9,8 @@ import {
   SheetDescription, 
   SheetHeader, 
   SheetTitle,
-  SheetFooter
+  SheetFooter,
+  SheetClose
 } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -29,13 +30,13 @@ import { createTaskSchema, CreateTaskInput, TaskStatus } from "@/shared/schemas/
 import { Task } from "../types";
 import { useCreateTask, useUpdateTask } from "../hooks/use-tasks";
 
-interface TaskSheetProps {
+interface TaskCreateUpdateFormProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   task?: Task | null;
 }
 
-export function TaskSheet({ open, onOpenChange, task }: TaskSheetProps) {
+export function TaskCreateUpdateForm({ open, onOpenChange, task }: TaskCreateUpdateFormProps) {
   const isEditing = !!task;
   const createTask = useCreateTask();
   const updateTask = useUpdateTask();
@@ -51,7 +52,7 @@ export function TaskSheet({ open, onOpenChange, task }: TaskSheetProps) {
     resolver: zodResolver(createTaskSchema),
     defaultValues: {
       title: "",
-      description: null,
+      description: "",
       status: "PENDING",
     },
   });
@@ -88,58 +89,64 @@ export function TaskSheet({ open, onOpenChange, task }: TaskSheetProps) {
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="sm:max-w-md">
-        <SheetHeader>
-          <SheetTitle>{isEditing ? "Edit Task" : "Create New Task"}</SheetTitle>
-          <SheetDescription>
-            {isEditing ? "Update your task details below." : "Add a new task to your list."}
+      <SheetContent className="w-full data-[side=right]:sm:max-w-xl">
+        <SheetHeader className="pb-6 border-b">
+          <SheetTitle className="font-bold">{isEditing ? "Edit Task" : "Create New Task"}</SheetTitle>
+          <SheetDescription className="text-xs">
+            {isEditing ? "Update your task details and status below." : "Add a fresh task to your workspace."}
           </SheetDescription>
         </SheetHeader>
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 py-6">
-          <FieldGroup>
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-8 py-8">
+          <FieldGroup className="space-y-6 p-4">
             <Field>
-              <FieldLabel htmlFor="title">Title</FieldLabel>
+              <FieldLabel htmlFor="title" className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Title</FieldLabel>
               <Input
                 id="title"
-                placeholder="Task title..."
+                placeholder="What needs to be done?"
+                className="h-12 text-base focus-visible:ring-primary/20"
                 {...register("title")}
                 aria-invalid={!!errors.title}
               />
               {errors.title && (
-                <span className="text-xs text-destructive">{errors.title.message as string}</span>
+                <span className="text-xs font-medium text-destructive">{errors.title.message as string}</span>
               )}
             </Field>
             <Field>
-              <FieldLabel htmlFor="description">Description</FieldLabel>
+              <FieldLabel htmlFor="description" className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Description</FieldLabel>
               <Input
                 id="description"
-                placeholder="Optional description..."
+                placeholder="Add more details (optional)..."
+                className="h-12 text-base focus-visible:ring-primary/20"
                 {...register("description")}
                 aria-invalid={!!errors.description}
               />
               {errors.description && (
-                <span className="text-xs text-destructive">{errors.description.message as string}</span>
+                <span className="text-xs font-medium text-destructive">{errors.description.message as string}</span>
               )}
             </Field>
             <Field>
-              <FieldLabel htmlFor="status">Status</FieldLabel>
+              <FieldLabel htmlFor="status" className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Status</FieldLabel>
               <Select 
                 onValueChange={(val) => setValue("status", val as TaskStatus)}
                 value={status}
               >
-                <SelectTrigger id="status">
+                <SelectTrigger id="status" className="h-12 text-base shadow-none">
                   <SelectValue placeholder="Select status" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="PENDING">Pending</SelectItem>
-                  <SelectItem value="IN_PROGRESS">In Progress</SelectItem>
-                  <SelectItem value="DONE">Done</SelectItem>
+                  <SelectItem value="PENDING" className="py-3">Pending</SelectItem>
+                  <SelectItem value="IN_PROGRESS" className="py-3">In Progress</SelectItem>
+                  <SelectItem value="DONE" className="py-3">Done</SelectItem>
                 </SelectContent>
               </Select>
             </Field>
           </FieldGroup>
-          <SheetFooter>
-            <Button type="submit" disabled={createTask.isPending || updateTask.isPending} className="w-full">
+          <SheetFooter className="pt-6 border-t mt-auto"> 
+            <Button 
+                type="submit" 
+                disabled={createTask.isPending || updateTask.isPending} 
+                className="w-full h-12 text-base font-bold shadow-lg shadow-primary/20"
+            >
               {isEditing ? "Save Changes" : "Create Task"}
             </Button>
           </SheetFooter>

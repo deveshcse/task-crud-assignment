@@ -82,14 +82,25 @@ export const useAppMutation = <TData = any, TError = AxiosError, TVariables = an
       const response = await apiClient(axiosConfig);
       return response.data.data;
     }),
+    ...config,
     onSuccess: (data, variables, context) => {
         if (successMessage) toast.success(successMessage);
         onSuccess?.(data, variables, context);
+
+        // @ts-ignore
+        config?.onSuccess?.(data, variables, context);
     },
-    onError: (error, variables, context) => {
-        if (errorMessage) toast.error(errorMessage || (error as any)?.response?.data?.message || "Something went wrong");
-        onError?.(error, variables, context as TContext);
+    onError: (err, variables, context) => {
+        const axiosError = err as any;
+        const msg = errorMessage || 
+                    axiosError?.response?.data?.error?.message || 
+                    axiosError?.response?.data?.message || 
+                    "Something went wrong";
+        
+        toast.error(msg);
+        onError?.(err as TError, variables, context as TContext);
+        // @ts-ignore
+        config?.onError?.(err, variables, context);
     },
-    ...config,
   });
 };
