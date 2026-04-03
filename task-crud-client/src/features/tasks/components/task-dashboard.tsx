@@ -167,7 +167,7 @@ export function TaskDashboard() {
           onValueChange={(val) => setStatus(val as any)}
           className="w-full md:w-auto items-center justify-between"
         >
-          <TabsList className="w-full grid grid-cols-4 items-center justify-center bg-muted/50 border-none p-1">
+          <TabsList className="w-full grid grid-cols-4 gap-4 items-center justify-center bg-muted/50 border-none p-1">
             <TabsTrigger value="all" className="text-xs border font-bold data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-lg">
               All
             </TabsTrigger>
@@ -196,7 +196,7 @@ export function TaskDashboard() {
             <div className="flex flex-col items-center justify-center h-120 gap-4 p-8 text-center bg-destructive/5">
               <p className="text-destructive font-bold text-lg">System Sync Error</p>
               <p className="text-muted-foreground text-sm max-w-xs mx-auto -mt-2">We couldn't reach the database.</p>
-              <Button variant="outline" size="sm" onClick={() => window.location.reload()} className="border-destructive/20 text-destructive hover:bg-destructive/10">Retry Connection</Button>
+              <Button variant="outline" size="sm" onClick={() => refetch()} className="border-destructive/20 text-destructive hover:bg-destructive/10">Retry Connection</Button>
             </div>
           ) : tasks.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-120 gap-6 text-center">
