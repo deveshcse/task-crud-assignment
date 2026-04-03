@@ -5,8 +5,8 @@ import { Task, TaskStatus } from "../types";
 import { useDeleteTask, useUpdateTask } from "../hooks/use-tasks";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { 
-  Pencil, 
+import {
+  Pencil,
   Trash2,
   Clock,
   CheckCircle2,
@@ -42,6 +42,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
+import { useTheme } from "next-themes";
 
 interface TaskItemProps {
   task: Task;
@@ -49,27 +50,28 @@ interface TaskItemProps {
 }
 
 const statusConfig = {
-  PENDING: { 
-    label: "Pending", 
-    variant: "outline" as const, 
+  PENDING: {
+    label: "Pending",
+    variant: "outline" as const,
     className: "bg-yellow-50 text-yellow-700 border-yellow-200 hover:bg-yellow-50",
-    icon: Circle 
+    icon: Circle
   },
-  IN_PROGRESS: { 
-    label: "In Progress", 
-    variant: "outline" as const, 
+  IN_PROGRESS: {
+    label: "In Progress",
+    variant: "outline" as const,
     className: "bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-50",
-    icon: Clock 
+    icon: Clock
   },
-  DONE: { 
-    label: "Done", 
-    variant: "outline" as const, 
+  DONE: {
+    label: "Done",
+    variant: "outline" as const,
     className: "bg-green-50 text-green-700 border-green-200 hover:bg-green-50",
-    icon: CheckCircle2 
+    icon: CheckCircle2
   },
 };
 
 export function TaskItem({ task, onEdit }: TaskItemProps) {
+  const { resolvedTheme } = useTheme();
   const deleteTask = useDeleteTask();
   const updateTask = useUpdateTask();
 
@@ -101,25 +103,29 @@ export function TaskItem({ task, onEdit }: TaskItemProps) {
           )}
         </div>
       </TableCell>
-      
+
       <TableCell>
-        <Select 
-          value={task.status} 
+        <Select
+          value={task.status}
           onValueChange={(val) => handleStatusChange(val as TaskStatus)}
           disabled={updateTask.isPending}
         >
           <SelectTrigger className={cn(
-            "w-34 border-none  px-2 transition-all text-[10px] font-bold uppercase tracking-wider shadow-none focus:ring-0",
+            "w-34 border-none px-2 transition-all text-[10px] font-bold uppercase tracking-wider shadow-none focus:ring-0",
             statusConfig[task.status].className
           )}>
             <div className="flex items-center gap-1.5">
-              {/* {React.createElement(statusConfig[task.status].icon, { className: "size-3" })} */}
               <SelectValue />
             </div>
           </SelectTrigger>
-          <SelectContent >
+
+          <SelectContent className="bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 text-slate-900 dark:text-zinc-100">
             {Object.entries(statusConfig).map(([key, config]) => (
-              <SelectItem key={key} value={key} className="text-xs font-medium ">
+              <SelectItem
+                key={key}
+                value={key}
+                className="text-xs font-medium cursor-pointer"
+              >
                 <div className="flex items-center gap-2">
                   <config.icon className="size-3" />
                   {config.label}
@@ -140,9 +146,9 @@ export function TaskItem({ task, onEdit }: TaskItemProps) {
         <div className="flex items-center justify-end gap-1">
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button 
-                variant="outline" 
-                size="icon" 
+              <Button
+                variant="outline"
+                size="icon"
                 className="size-8 text-muted-foreground text-primary/60 hover:text-primary hover:bg-primary/5 hover:border-primary/30"
                 onClick={() => onEdit(task)}
                 disabled={deleteTask.isPending}
@@ -157,9 +163,9 @@ export function TaskItem({ task, onEdit }: TaskItemProps) {
             <Tooltip>
               <TooltipTrigger asChild>
                 <AlertDialogTrigger asChild>
-                  <Button 
-                    variant="outline" 
-                    size="icon"   
+                  <Button
+                    variant="outline"
+                    size="icon"
                     className="size-8 text-muted-foreground text-destructive/60 hover:text-destructive hover:bg-destructive/5 hover:border-destructive/30 "
                     disabled={deleteTask.isPending}
                   >
@@ -179,7 +185,7 @@ export function TaskItem({ task, onEdit }: TaskItemProps) {
               </AlertDialogHeader>
               <AlertDialogFooter>
                 <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <AlertDialogAction 
+                <AlertDialogAction
                   onClick={handleDelete}
                   className="!bg-destructive !hover:bg-destructive/90 !text-destructive-foreground min-w-[80px]"
                   disabled={deleteTask.isPending}
@@ -188,8 +194,8 @@ export function TaskItem({ task, onEdit }: TaskItemProps) {
                     <Loader2 className="size-4 animate-spin" />
                   ) : (
                     <>
-                    <Trash2 className="size-4" />
-                    Delete
+                      <Trash2 className="size-4" />
+                      Delete
                     </>
                   )}
                 </AlertDialogAction>
