@@ -17,29 +17,27 @@ import {
 import { Input } from "@/components/ui/input"
 import { useAuth } from "@/features/auth/hooks/use-auth"
 import Link from "next/link"
-import { toast } from "sonner"
 import React, { useState } from "react"
 import { Eye, EyeOff } from "lucide-react"
+import { useForm } from "react-hook-form"
+import { zodResolver } from "@hookform/resolvers/zod"
+import { registerSchema, RegisterInput } from "@/shared/schemas/auth-schema"
 
 export function SignupForm({ ...props }: React.ComponentProps<typeof Card>) {
-  const { register, isRegistering } = useAuth();
+  const { register: registerAction, isRegistering } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    const formData = new FormData(e.currentTarget);
-    const name = formData.get("name") as string;
-    const email = formData.get("email") as string;
-    const password = formData.get("password") as string;
-    const confirmPassword = formData.get("confirm-password") as string;
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<RegisterInput>({
+    resolver: zodResolver(registerSchema),
+  });
 
-    if (password !== confirmPassword) {
-      toast.error("Passwords do not match");
-      return;
-    }
-
-    register({ name, email, password });
+  const onSubmit = (data: RegisterInput) => {
+    registerAction(data);
   };
 
   return (
@@ -51,21 +49,32 @@ export function SignupForm({ ...props }: React.ComponentProps<typeof Card>) {
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={handleSubmit(onSubmit)}>
           <FieldGroup>
             <Field>
               <FieldLabel htmlFor="name">Full Name</FieldLabel>
-              <Input id="name" name="name" type="text" placeholder="John Doe" required />
+              <Input
+                id="name"
+                placeholder="John Doe"
+                {...register("name")}
+                aria-invalid={!!errors.name}
+              />
+              {errors.name && (
+                <span className="text-xs text-destructive">{errors.name.message}</span>
+              )}
             </Field>
             <Field>
               <FieldLabel htmlFor="email">Email</FieldLabel>
               <Input
                 id="email"
-                name="email"
                 type="email"
                 placeholder="m@example.com"
-                required
+                {...register("email")}
+                aria-invalid={!!errors.email}
               />
+              {errors.email && (
+                <span className="text-xs text-destructive">{errors.email.message}</span>
+              )}
               <FieldDescription>
                 We&apos;ll use this to contact you. We will not share your email
                 with anyone else.
@@ -76,9 +85,9 @@ export function SignupForm({ ...props }: React.ComponentProps<typeof Card>) {
               <div className="relative">
                 <Input
                   id="password"
-                  name="password"
                   type={showPassword ? "text" : "password"}
-                  required
+                  {...register("password")}
+                  aria-invalid={!!errors.password}
                   className="pr-10"
                 />
                 <button
@@ -94,6 +103,9 @@ export function SignupForm({ ...props }: React.ComponentProps<typeof Card>) {
                   )}
                 </button>
               </div>
+              {errors.password && (
+                <span className="text-xs text-destructive">{errors.password.message}</span>
+              )}
               <FieldDescription>
                 Must be at least 8 characters long.
               </FieldDescription>
@@ -105,9 +117,9 @@ export function SignupForm({ ...props }: React.ComponentProps<typeof Card>) {
               <div className="relative">
                 <Input
                   id="confirm-password"
-                  name="confirm-password"
                   type={showConfirmPassword ? "text" : "password"}
-                  required
+                  {...register("confirm-password")}
+                  aria-invalid={!!errors["confirm-password"]}
                   className="pr-10"
                 />
                 <button
@@ -123,6 +135,9 @@ export function SignupForm({ ...props }: React.ComponentProps<typeof Card>) {
                   )}
                 </button>
               </div>
+              {errors["confirm-password"] && (
+                <span className="text-xs text-destructive">{errors["confirm-password"].message}</span>
+              )}
               <FieldDescription>Please confirm your password.</FieldDescription>
             </Field>
             <FieldGroup>
@@ -132,7 +147,10 @@ export function SignupForm({ ...props }: React.ComponentProps<typeof Card>) {
                 </Button>
                
                 <FieldDescription className="px-6 text-center">
-                  Already have an account? <Link href="/login" className="underline underline-offset-4 font-medium">Sign in</Link>
+                  Already have an account?{" "}
+                  <Link href="/login" className="underline underline-offset-4 font-medium text-primary hover:underline">
+                    Sign in
+                  </Link>
                 </FieldDescription>
               </Field>
             </FieldGroup>

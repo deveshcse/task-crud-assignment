@@ -20,6 +20,9 @@ import { useAuth } from "@/features/auth/hooks/use-auth"
 import Link from "next/link"
 import React, { useState } from "react"
 import { Eye, EyeOff } from "lucide-react"
+import { useForm } from "react-hook-form"
+import { zodResolver } from "@hookform/resolvers/zod"
+import { loginSchema, LoginInput } from "@/shared/schemas/auth-schema"
 
 export function LoginForm({
   className,
@@ -28,12 +31,16 @@ export function LoginForm({
   const { login, isLoggingIn } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    const formData = new FormData(e.currentTarget);
-    const email = formData.get("email") as string;
-    const password = formData.get("password") as string;
-    login({ email, password });
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<LoginInput>({
+    resolver: zodResolver(loginSchema),
+  });
+
+  const onSubmit = (data: LoginInput) => {
+    login(data);
   };
 
   return (
@@ -46,17 +53,20 @@ export function LoginForm({
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit}>
+          <form onSubmit={handleSubmit(onSubmit)}>
             <FieldGroup>
               <Field>
                 <FieldLabel htmlFor="email">Email</FieldLabel>
                 <Input
                   id="email"
-                  name="email"
                   type="email"
                   placeholder="m@example.com"
-                  required
+                  {...register("email")}
+                  aria-invalid={!!errors.email}
                 />
+                {errors.email && (
+                  <span className="text-xs text-destructive">{errors.email.message}</span>
+                )}
               </Field>
               <Field>
                 <div className="flex items-center">
@@ -71,9 +81,9 @@ export function LoginForm({
                 <div className="relative">
                   <Input
                     id="password"
-                    name="password"
                     type={showPassword ? "text" : "password"}
-                    required
+                    {...register("password")}
+                    aria-invalid={!!errors.password}
                     className="pr-10"
                   />
                   <button
@@ -89,6 +99,9 @@ export function LoginForm({
                     )}
                   </button>
                 </div>
+                {errors.password && (
+                  <span className="text-xs text-destructive">{errors.password.message}</span>
+                )}
               </Field>
               <Field>
                 <Button type="submit" disabled={isLoggingIn}>
@@ -96,7 +109,7 @@ export function LoginForm({
                 </Button>
                 <FieldDescription className="text-center">
                   Don&apos;t have an account?{" "}
-                  <Link href="/register" className="underline underline-offset-4 font-medium">
+                  <Link href="/register" className="underline underline-offset-4 font-medium text-primary">
                     Sign up
                   </Link>
                 </FieldDescription>

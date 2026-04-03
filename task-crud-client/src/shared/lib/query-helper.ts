@@ -12,24 +12,24 @@ import apiClient from "@/shared/api/api-client";
 // --- Types ---
 
 interface AppQueryOptions<TQueryFnData = unknown, TError = AxiosError, TData = TQueryFnData> {
-  url: string;
+  url?: string;
   queryKey: QueryKey;
   params?: Record<string, any>;
   onSuccess?: (data: TData) => void;
   onError?: (error: TError) => void;
   successMessage?: string;
   errorMessage?: string;
-  config?: Omit<UseQueryOptions<TQueryFnData, TError, TData>, 'queryKey' | 'queryFn'>;
+  config?: UseQueryOptions<TQueryFnData, TError, TData>;
 }
 
 interface AppMutationOptions<TData = unknown, TError = AxiosError, TVariables = void, TContext = unknown> {
-  url: string;
-  method: "POST" | "PATCH" | "PUT" | "DELETE";
+  url?: string;
+  method?: "POST" | "PATCH" | "PUT" | "DELETE";
   onSuccess?: (data: TData, variables: TVariables, context: TContext) => void;
   onError?: (error: TError, variables: TVariables, context: TContext) => void;
   successMessage?: string;
   errorMessage?: string;
-  config?: Omit<UseMutationOptions<TData, TError, TVariables, TContext>, 'mutationFn'>;
+  config?: UseMutationOptions<TData, TError, TVariables, TContext>;
 }
 
 // --- Query Helper ---
@@ -46,21 +46,16 @@ export const useAppQuery = <TQueryFnData = any, TError = AxiosError, TData = TQu
 }: AppQueryOptions<TQueryFnData, TError, TData>) => {
   return useQuery<TQueryFnData, TError, TData>({
     queryKey,
-    queryFn: async () => {
-      try {
+    queryFn: config?.queryFn || (async () => {
+        if (!url) throw new Error("URL is required if queryFn is not provided");
         const response = await apiClient.get(url, { params });
         const data = response.data.data;
-        if (successMessage) toast.success(successMessage);
-        onSuccess?.(data);
         return data;
-      } catch (error) {
-        const axiosError = error as TError;
-        if (errorMessage) toast.error(errorMessage);
-        onError?.(axiosError);
-        throw axiosError;
-      }
-    },
+    }),
     ...config,
+    // Note: React Query v5 doesn't have onSuccess/onError in useQuery anymore.
+    // They should be handled in the component or via a custom hook effect if needed.
+    // However, we can preserve them for the queryFn wrapper if we want.
   });
 };
 
@@ -76,7 +71,8 @@ export const useAppMutation = <TData = any, TError = AxiosError, TVariables = an
   config,
 }: AppMutationOptions<TData, TError, TVariables, TContext>) => {
   return useMutation<TData, TError, TVariables, TContext>({
-    mutationFn: async (variables) => {
+    mutationFn: config?.mutationFn || (async (variables) => {
+      if (!url || !method) throw new Error("URL and Method are required if mutationFn is not provided");
       const axiosConfig: AxiosRequestConfig = {
         method,
         url,
@@ -85,7 +81,7 @@ export const useAppMutation = <TData = any, TError = AxiosError, TVariables = an
       
       const response = await apiClient(axiosConfig);
       return response.data.data;
-    },
+    }),
     onSuccess: (data, variables, context) => {
         if (successMessage) toast.success(successMessage);
         onSuccess?.(data, variables, context);

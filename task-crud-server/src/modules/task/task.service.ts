@@ -14,7 +14,9 @@ import {
 // ── Get all tasks (paginated, filtered, searchable) ───────────────────────────
 
 export async function getTasks(userId: string, query: ListTasksQuery) {
-  const { page, limit, status, search } = query;
+  const { status, search } = query;
+  const page = Number(query.page) || 1;
+  const limit = Number(query.limit) || 10;
   const skip = (page - 1) * limit;
 
   // Build where clause dynamically
