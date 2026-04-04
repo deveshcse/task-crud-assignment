@@ -3,14 +3,14 @@
 import React, { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { 
-  Sheet, 
-  SheetContent, 
-  SheetDescription, 
-  SheetHeader, 
+import type { Resolver } from "react-hook-form";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
   SheetTitle,
   SheetFooter,
-  SheetClose
 } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -31,13 +31,25 @@ import { Task } from "../types";
 import { useCreateTask, useUpdateTask } from "../hooks/use-tasks";
 import { Plus, Loader2, Save } from "lucide-react";
 
-interface TaskCreateUpdateFormProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  task?: Task | null;
+const TASK_STATUSES = ["PENDING", "IN_PROGRESS", "DONE"] as const;
+
+function isTaskStatus(value: string): value is TaskStatus {
+  return (TASK_STATUSES as readonly string[]).includes(value);
 }
 
-export function TaskCreateUpdateForm({ open, onOpenChange, task }: TaskCreateUpdateFormProps) {
+type TaskFormValues = CreateTaskInput;
+
+interface TaskCreateUpdateFormProps {
+  readonly open: boolean;
+  readonly onOpenChange: (open: boolean) => void;
+  readonly task?: Task | null;
+}
+
+export function TaskCreateUpdateForm({
+  open,
+  onOpenChange,
+  task,
+}: Readonly<TaskCreateUpdateFormProps>) {
   const isEditing = !!task;
   const createTask = useCreateTask();
   const updateTask = useUpdateTask();
@@ -49,8 +61,8 @@ export function TaskCreateUpdateForm({ open, onOpenChange, task }: TaskCreateUpd
     reset,
     watch,
     formState: { errors },
-  } = useForm<any>({
-    resolver: zodResolver(createTaskSchema),
+  } = useForm<TaskFormValues>({
+    resolver: zodResolver(createTaskSchema) as Resolver<TaskFormValues>,
     defaultValues: {
       title: "",
       description: "",
@@ -76,26 +88,29 @@ export function TaskCreateUpdateForm({ open, onOpenChange, task }: TaskCreateUpd
     }
   }, [task, reset, open]);
 
-  const onSubmit = (shouldClose: boolean) => (data: CreateTaskInput) => {
+  const submitTask = (data: TaskFormValues, options: { shouldClose: boolean }) => {
     if (isEditing && task) {
-      updateTask.mutate({ id: task.id, data }, {
-        onSuccess: () => onOpenChange(false)
-      });
-    } else {
-      createTask.mutate(data, {
-        onSuccess: () => {
-          if (shouldClose) {
-            onOpenChange(false);
-          } else {
-            reset({
-              title: "",
-              description: "",
-              status: "PENDING",
-            });
-          }
+      updateTask.mutate(
+        { id: task.id, data },
+        {
+          onSuccess: () => onOpenChange(false),
         }
-      });
+      );
+      return;
     }
+    createTask.mutate(data, {
+      onSuccess: () => {
+        if (options.shouldClose) {
+          onOpenChange(false);
+        } else {
+          reset({
+            title: "",
+            description: "",
+            status: "PENDING",
+          });
+        }
+      },
+    });
   };
 
   return (
@@ -107,7 +122,10 @@ export function TaskCreateUpdateForm({ open, onOpenChange, task }: TaskCreateUpd
             {isEditing ? "Update your task details and status below." : "Add a fresh task to your workspace."}
           </SheetDescription>
         </SheetHeader>
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-8 py-8">
+        <form
+          onSubmit={handleSubmit((data) => submitTask(data, { shouldClose: true }))}
+          className="space-y-8 py-8"
+        >
           <FieldGroup className="space-y-4 p-4">
             <Field>
               <FieldLabel htmlFor="title" className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Title</FieldLabel>
@@ -137,8 +155,12 @@ export function TaskCreateUpdateForm({ open, onOpenChange, task }: TaskCreateUpd
             </Field>
             <Field>
               <FieldLabel htmlFor="status" className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Status</FieldLabel>
-              <Select 
-                onValueChange={(val) => setValue("status", val as TaskStatus)}
+              <Select
+                onValueChange={(val) => {
+                  if (isTaskStatus(val)) {
+                    setValue("status", val);
+                  }
+                }}
                 value={status}
               >
                 <SelectTrigger id="status" >
@@ -156,7 +178,7 @@ export function TaskCreateUpdateForm({ open, onOpenChange, task }: TaskCreateUpd
             {isEditing ? (
               <Button 
                 type="submit" 
-                onClick={handleSubmit(onSubmit(true))}
+                onClick={handleSubmit((data) => submitTask(data, { shouldClose: true }))}
                 disabled={updateTask.isPending} 
                 className="min-w-[140px]  text-sm font-bold shadow-lg shadow-primary/20"
               >
@@ -172,7 +194,7 @@ export function TaskCreateUpdateForm({ open, onOpenChange, task }: TaskCreateUpd
                 <Button 
                   type="button" 
                   variant="outline"
-                  onClick={handleSubmit(onSubmit(false))}
+                  onClick={handleSubmit((data) => submitTask(data, { shouldClose: false }))}
                   disabled={createTask.isPending} 
                   className="min-w-25 "
                 >
@@ -186,7 +208,7 @@ export function TaskCreateUpdateForm({ open, onOpenChange, task }: TaskCreateUpd
                 <Button 
                   type="button" 
                   variant="outline"
-                  onClick={handleSubmit(onSubmit(true))}
+                  onClick={handleSubmit((data) => submitTask(data, { shouldClose: true }))}
                   disabled={createTask.isPending} 
                   className="min-w-[140px] "
                 >

@@ -1,30 +1,48 @@
+import { AxiosError } from "axios";
+import { useQueryClient } from "@tanstack/react-query";
 import { useAppQuery, useAppMutation } from "@/shared/lib/query-helper";
 import { Task, TaskResponse, CreateTaskInput, UpdateTaskInput, TaskStatus } from "../types";
-import { useQueryClient } from "@tanstack/react-query";
 
 export const TASK_KEYS = {
   all: ["tasks"] as const,
   lists: () => [...TASK_KEYS.all, "list"] as const,
-  list: (params: Record<string, any>) => [...TASK_KEYS.lists(), params] as const,
+  list: (params: {
+    page?: number;
+    limit?: number;
+    status?: TaskStatus;
+    search?: string;
+  }) =>
+    [
+      ...TASK_KEYS.lists(),
+      params.page ?? null,
+      params.limit ?? null,
+      params.status ?? null,
+      params.search ?? null,
+    ] as const,
 };
 
-export const useTasks = (params: { page?: number; limit?: number; status?: TaskStatus; search?: string }) => {
-  const queryKey = TASK_KEYS.list(params);
-  return useAppQuery<TaskResponse>({
-    queryKey,
-    config: {
-        queryKey, // Required by UseQueryOptions
-        queryFn: async () => {
-            const response = await (await import("@/shared/api/api-client")).default.get("/tasks", { params });
-            return response.data.data;
-        }
-    }
-  });
+
+export const useTasks = (params: {
+  page?: number;
+  limit?: number;
+  status?: TaskStatus;
+  search?: string;
+}) => {
+    const queryKey = TASK_KEYS.list(params);
+
+    return useAppQuery<TaskResponse>({
+        url: "/tasks",
+        queryKey,
+        params,
+        config: {
+            refetchOnMount: "always",
+        },
+    });
 };
 
 export const useCreateTask = () => {
     const queryClient = useQueryClient();
-    return useAppMutation<Task, any, CreateTaskInput>({
+    return useAppMutation<Task, AxiosError, CreateTaskInput>({
         url: "/tasks",
         method: "POST",
         successMessage: "Task created successfully",
@@ -36,7 +54,7 @@ export const useCreateTask = () => {
 
 export const useUpdateTask = () => {
     const queryClient = useQueryClient();
-    return useAppMutation<Task, any, { id: string; data: UpdateTaskInput }>({
+    return useAppMutation<Task, AxiosError, { id: string; data: UpdateTaskInput }>({
         successMessage: "Task updated successfully",
         config: {
             mutationFn: async ({ id, data }) => {
@@ -53,7 +71,7 @@ export const useUpdateTask = () => {
 
 export const useDeleteTask = () => {
     const queryClient = useQueryClient();
-    return useAppMutation<void, any, string>({
+    return useAppMutation<void, AxiosError, string>({
         successMessage: "Task deleted successfully",
         config: {
             mutationFn: async (id: string) => {
@@ -69,7 +87,7 @@ export const useDeleteTask = () => {
 
 export const useToggleTask = () => {
     const queryClient = useQueryClient();
-    return useAppMutation<Task, any, string>({
+    return useAppMutation<Task, AxiosError, string>({
         successMessage: "Task status updated",
         config: {
             mutationFn: async (id: string) => {

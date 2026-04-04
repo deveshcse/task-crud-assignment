@@ -1,7 +1,10 @@
+import { AxiosError } from "axios";
+import { useQueryClient } from "@tanstack/react-query";
 import { useAppMutation } from "@/shared/lib/query-helper";
 import { authStore } from "@/features/auth/store/auth-store";
-import { User, AuthResponse } from "@/features/auth/types";
+import { AuthResponse } from "@/features/auth/types";
 import { useAuthContext } from "@/features/auth/components/auth-provider";
+import { TASK_KEYS } from "@/features/tasks/hooks/use-tasks";
 import { useRouter } from "next/navigation";
 import { 
   ForgotPasswordInput, 
@@ -11,15 +14,17 @@ import {
 } from "@/shared/schemas/auth-schema";
 
 export const useAuth = () => {
+  const queryClient = useQueryClient();
   const { setUser, setIsAuthenticated } = useAuthContext();
   const router = useRouter();
 
-  const loginMutation = useAppMutation<AuthResponse, any, LoginInput>({
+  const loginMutation = useAppMutation<AuthResponse, AxiosError, LoginInput>({
     url: "/auth/login",
     method: "POST",
     successMessage: "Logged in successfully!",
     errorMessage: "Login failed. Please check your credentials.",
     onSuccess: (data) => {
+      authStore.bumpAuthEpoch();
       authStore.setToken(data.accessToken);
       setUser(data.user);
       setIsAuthenticated(true);
@@ -27,12 +32,13 @@ export const useAuth = () => {
     },
   });
 
-  const registerMutation = useAppMutation<AuthResponse, any, RegisterInput>({
+  const registerMutation = useAppMutation<AuthResponse, AxiosError, RegisterInput>({
     url: "/auth/register",
     method: "POST",
     successMessage: "Account created successfully!",
     errorMessage: "Registration failed. Please try again.",
     onSuccess: (data) => {
+      authStore.bumpAuthEpoch();
       authStore.setToken(data.accessToken);
       setUser(data.user);
       setIsAuthenticated(true);
@@ -40,25 +46,30 @@ export const useAuth = () => {
     },
   });
 
-  const logoutMutation = useAppMutation({
+  const logoutMutation = useAppMutation<void, AxiosError, void>({
     url: "/auth/logout",
     method: "POST",
     successMessage: "Logged out successfully!",
-    onSuccess: () => {
-      authStore.clearToken();
-      setUser(null);
-      setIsAuthenticated(false);
-      router.push("/login");
+    config: {
+      onSettled: (_data, error) => {
+        queryClient.removeQueries({ queryKey: TASK_KEYS.all });
+        authStore.reset();
+        setUser(null);
+        setIsAuthenticated(false);
+        if (!error) {
+          router.push("/login");
+        }
+      },
     },
   });
 
-  const forgotPasswordMutation = useAppMutation<any, any, ForgotPasswordInput>({
+  const forgotPasswordMutation = useAppMutation<unknown, AxiosError, ForgotPasswordInput>({
     url: "/auth/forgot-password",
     method: "POST",
     successMessage: "If an account exists, a reset link has been sent.",
   });
 
-  const resetPasswordMutation = useAppMutation<any, any, ResetPasswordInput>({
+  const resetPasswordMutation = useAppMutation<unknown, AxiosError, ResetPasswordInput>({
     url: "/auth/reset-password",
     method: "POST",
     successMessage: "Password reset successfully! Please login.",

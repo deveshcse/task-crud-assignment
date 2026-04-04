@@ -37,6 +37,16 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 
+const STATUS_FILTER_VALUES = ["all", "PENDING", "IN_PROGRESS", "DONE"] as const;
+type StatusFilterValue = (typeof STATUS_FILTER_VALUES)[number];
+
+function isStatusFilterValue(value: string): value is StatusFilterValue {
+  return (STATUS_FILTER_VALUES as readonly string[]).includes(value);
+}
+
+const toolbarIconButtonClass =
+  "size-8 text-muted-foreground hover:text-primary hover:bg-primary/5 hover:border-primary/30";
+
 export function TaskDashboard() {
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState<TaskStatus | "all">("all");
@@ -74,12 +84,84 @@ export function TaskDashboard() {
     setIsSheetOpen(true);
   };
 
-  const tasks = (data as any)?.tasks || [];
-  const totalPages = (data as any)?.totalPages || 1;
+  const tasks: Task[] = data?.tasks ?? [];
+  const totalPages = data?.totalPages ?? 1;
 
   React.useEffect(() => {
     setPage(1);
   }, [debouncedSearch, status]);
+
+  const emptyStateMessage =
+    search || status !== "all"
+      ? "We couldn't find any tasks matching your current filters."
+      : "Your workspace is currently empty.";
+
+  let taskTableBody: React.ReactNode;
+  if (isLoading) {
+    taskTableBody = (
+      <div className="flex flex-col items-center justify-center h-120 gap-3 text-muted-foreground">
+        <Loader2 className="size-8 animate-spin text-primary" />
+        <p className="text-sm font-semibold animate-pulse">Synchronizing tasks...</p>
+      </div>
+    );
+  } else if (isError) {
+    taskTableBody = (
+      <div className="flex flex-col items-center justify-center h-120 gap-4 p-8 text-center bg-destructive/5">
+        <p className="text-destructive font-bold text-lg">System Sync Error</p>
+        <p className="text-muted-foreground text-sm max-w-xs mx-auto -mt-2">
+          We couldn&apos;t reach the database.
+        </p>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => refetch()}
+          className="border-destructive/20 text-destructive hover:bg-destructive/10"
+        >
+          Retry Connection
+        </Button>
+      </div>
+    );
+  } else if (tasks.length === 0) {
+    taskTableBody = (
+      <div className="flex flex-col items-center justify-center h-120 gap-6 text-center">
+        <div className="p-6 rounded-3xl bg-muted/50 text-muted-foreground/30 ring-1 ring-border">
+          <SearchX className="size-12" />
+        </div>
+        <div className="flex flex-col gap-2">
+          <p className="font-bold text-2xl tracking-tight text-foreground/80">No matches found</p>
+          <p className="text-muted-foreground font-medium text-sm max-w-xs mx-auto px-4 leading-relaxed">
+            {emptyStateMessage}
+          </p>
+        </div>
+      </div>
+    );
+  } else {
+    taskTableBody = (
+      <Table>
+        <TableHeader className="bg-muted/30">
+          <TableRow className="hover:bg-transparent border-b">
+            <TableHead className="w-1/2 font-bold px-2 text-foreground/70 uppercase text-xs tracking-widest">
+              Task Details
+            </TableHead>
+            <TableHead className="w-1/4 font-bold text-foreground/70 uppercase text-xs tracking-widest">
+              Status
+            </TableHead>
+            <TableHead className="hidden md:table-cell font-bold text-foreground/70 uppercase text-xs tracking-widest text-right px-6">
+              Timeline
+            </TableHead>
+            <TableHead className="text-right font-bold px-2 text-foreground/70 uppercase text-xs tracking-widest">
+              Actions
+            </TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {tasks.map((task: Task) => (
+            <TaskItem key={task.id} task={task} onEdit={handleEdit} />
+          ))}
+        </TableBody>
+      </Table>
+    );
+  }
 
   return (
     <div className="flex flex-col gap-6 w-full px-8 pt-2">
@@ -121,7 +203,7 @@ export function TaskDashboard() {
               <Button
                 variant="outline"
                 size="icon"
-                className="size-8 text-muted-foreground text-primary/60 hover:text-primary hover:bg-primary/5 hover:border-primary/30"
+                className={toolbarIconButtonClass}
                 onClick={() => {
                   setSearch("");
                   setDebouncedSearch("");
@@ -140,10 +222,7 @@ export function TaskDashboard() {
               <Button
                 variant="outline"
                 size="icon"
-                className={cn(
-                  "size-8 text-muted-foreground text-primary/60 hover:text-primary hover:bg-primary/5 hover:border-primary/30",
-                 
-                )}
+                className={toolbarIconButtonClass}
                 onClick={() => refetch()}
                 disabled={isLoading}
               >
@@ -164,7 +243,11 @@ export function TaskDashboard() {
 
         <Tabs
           value={status}
-          onValueChange={(val) => setStatus(val as any)}
+          onValueChange={(val) => {
+            if (isStatusFilterValue(val)) {
+              setStatus(val);
+            }
+          }}
           className="w-full md:w-auto items-center justify-between"
         >
           <TabsList className="w-full grid grid-cols-4 gap-4 items-center justify-center bg-muted/50 border-none p-1">
@@ -186,50 +269,7 @@ export function TaskDashboard() {
 
       {/* Table Container */}
       <div className="border bg-card shadow-sm overflow-hidden h-full min-h-120 flex flex-col justify-between">
-        <div>
-          {isLoading ? (
-            <div className="flex flex-col items-center justify-center h-120 gap-3 text-muted-foreground">
-              <Loader2 className="size-8 animate-spin text-primary" />
-              <p className="text-sm font-semibold animate-pulse">Synchronizing tasks...</p>
-            </div>
-          ) : isError ? (
-            <div className="flex flex-col items-center justify-center h-120 gap-4 p-8 text-center bg-destructive/5">
-              <p className="text-destructive font-bold text-lg">System Sync Error</p>
-              <p className="text-muted-foreground text-sm max-w-xs mx-auto -mt-2">We couldn't reach the database.</p>
-              <Button variant="outline" size="sm" onClick={() => refetch()} className="border-destructive/20 text-destructive hover:bg-destructive/10">Retry Connection</Button>
-            </div>
-          ) : tasks.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-120 gap-6 text-center">
-              <div className="p-6 rounded-3xl bg-muted/50 text-muted-foreground/30 ring-1 ring-border">
-                <SearchX className="size-12" />
-              </div>
-              <div className="flex flex-col gap-2">
-                <p className="font-bold text-2xl tracking-tight text-foreground/80">No matches found</p>
-                <p className="text-muted-foreground font-medium text-sm max-w-xs mx-auto px-4 leading-relaxed">
-                  {search || status !== "all"
-                    ? "We couldn't find any tasks matching your current filters."
-                    : "Your workspace is currently empty."}
-                </p>
-              </div>
-            </div>
-          ) : (
-            <Table>
-              <TableHeader className="bg-muted/30">
-                <TableRow className="hover:bg-transparent border-b">
-                  <TableHead className="w-1/2 font-bold px-2 text-foreground/70 uppercase text-xs tracking-widest">Task Details</TableHead>
-                  <TableHead className="w-1/4 font-bold text-foreground/70 uppercase text-xs tracking-widest">Status</TableHead>
-                  <TableHead className="hidden md:table-cell font-bold text-foreground/70 uppercase text-xs tracking-widest text-right px-6">Timeline</TableHead>
-                  <TableHead className="text-right font-bold px-2 text-foreground/70 uppercase text-xs tracking-widest">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {tasks.map((task: Task) => (
-                  <TaskItem key={task.id} task={task} onEdit={handleEdit} />
-                ))}
-              </TableBody>
-            </Table>
-          )}
-        </div>
+        <div>{taskTableBody}</div>
 
         {/* Pagination Footer */}
         {!isLoading && !isError && tasks.length > 0 && (
